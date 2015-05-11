@@ -151,17 +151,17 @@ public class BoggleSolver {
         if (Nod.next()[cti(nxt)] == null) return;
         //if (visited[pos]) return;
         TrieNode.Node Node = Nod.next()[cti(nxt)];
-        StringBuilder word = new StringBuilder(wrd);
-        word.append(nxt);
+     //   StringBuilder word = new StringBuilder(wrd);
+      //  word.append(nxt);
         if (nxt == 'Q') {
             Node = Node.next()[cti('U')];
-            word.append('U');
+     //       word.append('U');
         }
         boolean vis[] = visited.clone();
         vis[pos]=true;
         if (Node.isString()) {
     //        StdOut.println("added\n");
-            hits.add(new String(word));
+            hits.add(Node.getString());
         }
         Stack<Integer> DFS = new Stack<Integer>();
         adj(mapx(pos), mapy(pos), DFS);
@@ -176,7 +176,7 @@ public class BoggleSolver {
             DFS(count+1, 
                     pos,
                     board.getLetter(mapy(pos),mapx(pos)),
-                    word,
+                    wrd,
                     hits,
                     board,
                     vis,
@@ -249,27 +249,28 @@ public class BoggleSolver {
         In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-yawl.txt");
         String[] dictionary = in.readAllStrings();
         BoggleSolver solver = new BoggleSolver(dictionary);
-        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-q.txt");
+        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points1250.txt");
         int score = 0;
         Stopwatch timer = new Stopwatch();
-        int N = 1000;
+        int N = 10000;
         for (int i = 0; i < N; i++){
             solver.getAllValidWords(board);
             //if (i % 50 == 0) StdOut.println(i);
         }
         double Time = timer.elapsedTime();
-        StdOut.printf("Boggle Solver Time at %d iterations: %f", N, timer.elapsedTime());
+     //   StdOut.printf("Boggle Solver Time at %d iterations: %f", N, timer.elapsedTime());
         BoggleBoard board1 = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points100.txt");
         timer = new Stopwatch();
         for (int i = 0; i < N; i++){
             solver.getAllValidWords(board1);
           //  if (i % 50 == 0) StdOut.println(i);
         }
-        StdOut.printf("Boggle Solver Time with 100 solutions at %d iterations: %f\n", N, timer.elapsedTime());
+        StdOut.printf("Boggle Solver Time with 100 solutions at %d iterations: %f", N, timer.elapsedTime());
+        StdOut.println("");
         StdOut.printf("Boggle Solver Time with 1250 solutions at %d iterations: %f", N, Time);
         for (String word : solver.getAllValidWords(board))
         {
-       //     StdOut.print("\n" + word);
+            StdOut.print("\n" + word);
             score += solver.scoreOf(word);
         }
      //   StdOut.println("\nScore = " + score);
