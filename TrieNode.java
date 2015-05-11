@@ -9,12 +9,16 @@ public class TrieNode implements Iterable<String> {
     public class Node {
         private Node[] next = new Node[R];
         private boolean isString;
+        private String Str;
         
         public Node[] next(){
             return next;
         }
         public boolean isString(){
-            return isString;
+            return Str != null;
+        }
+        public String getString(){
+            return Str;
         }
     }
 
@@ -77,6 +81,7 @@ public class TrieNode implements Iterable<String> {
         if (d == key.length()) {
             if (!x.isString) N++;
             x.isString = true;
+            x.Str = key;
         }
         else {
             int c = key.charAt(d) % R;
