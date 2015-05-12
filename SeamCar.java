@@ -1,5 +1,5 @@
 import java.awt.Color;
-public class SeamCarver {
+public class SeamCarver2 {
     private Color[] pic;
     private int[] en;
     private int[] edgeto;
@@ -15,7 +15,7 @@ public class SeamCarver {
      * // create a seam carver object based on the given picture
      * @param picture
      */
-    public SeamCarver(Picture picture){
+    public SeamCarver2(Picture picture){
         Picture pic = new Picture(picture);
         this.w = pic.width();
         this.h = pic.height();
@@ -308,14 +308,14 @@ public class SeamCarver {
         if (flag) throw new IllegalArgumentException();
     }
     public static void main(String args[]){
-        SeamCarver test= new SeamCarver(new Picture("/Users/tiemo/Desktop/DeskStuff/Tiemo Profile3.jpg"));
+        SeamCarver2 test= new SeamCarver2(new Picture("/Users/tiemo/Desktop/DeskStuff/Tiemo Profile2.jpg"));
         Picture t=new Picture(test.picture());
         t.show();
         Stopwatch timer = new Stopwatch();
         for (int l = 0; l < 300; l++) {
-            if (l % 10 == 1) test.picture().show();
-            test.removeHorizontalSeam(test.findHorizontalSeam());
-            test.removeVerticalSeam(test.findVerticalSeam());
+            //if (l % 5 == 1) test.picture().show();
+            test.findHorizontalSeam();
+            test.findVerticalSeam();
         }
         StdOut.print(timer.elapsedTime());
         test.picture().show();/**/
