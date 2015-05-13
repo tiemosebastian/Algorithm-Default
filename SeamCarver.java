@@ -3,7 +3,8 @@ public class SeamCarver {
     private Color[] pic;
     private int[] en;
     private int[] edgeto;
-    private int[] disto; 
+    private int[] disto;
+    private boolean[] marked;
     private int start;
     private int end;
     private int w;
@@ -25,6 +26,7 @@ public class SeamCarver {
                 this.pic[map(i, j)] = pic.get(j, i);
             }
         }
+        marked = new boolean[h * w + 2];
         edgeto = new int[h * w + 2];
         disto = new int[h * w + 2];
         end = h * w;
@@ -93,53 +95,65 @@ public class SeamCarver {
      * @return
      */
     public int[] findHorizontalSeam(){
-        FHS();
+        boolean mtf = marked[0];
+        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
+        IndexMinPQ<Integer> seam = new IndexMinPQ<Integer>(h * w + 3);
+        Stack<Integer> rpo = new Stack<Integer>();
+        hdfs(start, rpo, mtf);
+        for (int v : rpo) {
+            for (int e : hadj(v)) {
+               relax(v, e, seam);
+            }
+        }
         int p = end;
-        int[] HS = new int[w];
-        for (int i = w - 1; i >= 0; i--) {
+        int[] HS = new int[w]; 
+        while (p==end || mapx(p) > 0) {
             p = edgeto[p];
             HS[mapx(p)] = mapy(p);
         }
         return HS;
+    }
+    private void hdfs(int v, Stack<Integer> postorder, boolean mtf) {
+        marked[v] = !mtf;
+        for (int e : hadj(v)) {
+            if (marked[e] == mtf) {
+                hdfs(e, postorder, mtf);
+            }
+        }
+        postorder.push(v);
     }
     /**
      * // sequence of indices for vertical seam
      * @return
      */
     public int[] findVerticalSeam(){
-        FVS();
+        boolean mtf = marked[0];
+        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
+        IndexMinPQ<Integer> seam = new IndexMinPQ<Integer>(h * w + 3);
+        Stack<Integer> rpo = new Stack<Integer>();
+        vdfs(start, rpo, mtf);
+        for (int v : rpo) {
+            for (int e : vadj(v)) {
+               relax(v, e, seam);
+            }
+        }
         int p = end;
-        int[] VS = new int[h];
+        int[] VS = new int[h]; 
         while (mapy(p) > 0) {
             p = edgeto[p];
             VS[mapy(p)] = mapx(p);
         }
         return VS;
-    }   
-    private void FVS(){
-        IndexMinPQ<Integer> pq = new IndexMinPQ<Integer>(h * w + 3);
-        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
-        pq.insert(start, 0);
-        while (!pq.isEmpty()){
-            int p = pq.delMin();
-            for(int q: vadj(p)){ 
-                relax(p, q, pq);
+    }
+    private void vdfs(int v, Stack<Integer> postorder, boolean mtf) {
+        marked[v] = !mtf;
+        for (int e : vadj(v)) {
+            if (marked[e] == mtf) {
+                vdfs(e, postorder, mtf);
             }
         }
+        postorder.push(v);
     }
-    private void FHS(){
-        IndexMinPQ<Integer> pq = new IndexMinPQ<Integer>(h * w + 3);
-        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
-        
-        pq.insert(start, 0);
-        while (!pq.isEmpty()) {
-            int p = pq.delMin();
-            for (int q: hadj(p)) {
-                relax(p, q, pq);
-            }
-         }
-    }
-    
     private void relax(int from, int p, IndexMinPQ<Integer> pq){
         if (disto[p] > disto[from] + en[p]) {
             disto[p] = disto[from] + en[p];
@@ -192,7 +206,7 @@ public class SeamCarver {
      * @param seam
      */
     public void removeHorizontalSeam(int[] seam){
-        checkHSeam(seam);
+      //  checkHSeam(seam);
         int max = 0;
         for (int i : seam) {
             if (i > max) max = i;
@@ -217,7 +231,7 @@ public class SeamCarver {
      * // remove vertical seam from current picture
      */
     public void removeVerticalSeam(int[] seam){
-        checkVSeam(seam);
+  //      checkVSeam(seam);
         for(int i = 0; i < h; i++){
             System.arraycopy(pic, i * w, pic, i * (w - 1), seam[i]);
             System.arraycopy(en, i * w, en, i * (w - 1), seam[i]);
@@ -278,11 +292,20 @@ public class SeamCarver {
         if (seam == null) throw new NullPointerException();
         boolean flag = false;
         if (w <= 1) flag = true;
-        if (seam.length != w) flag = true;
-        if (!checkpoint(0, seam[0])) flag = true;
+        if (seam.length != w) {
+            flag = true;
+            StdOut.print("Length");
+        }
+        if (!checkpoint(0, seam[0])) {
+            flag = true;
+            StdOut.print("checkpoint");
+        }
         for (int i = 0; i < seam.length - 1; i++) {
             if (!checkpoint(seam[i + 1], i + 1));
-            if (Math.abs(seam[i + 1] - seam[i]) > 1) flag = true;
+            if (Math.abs(seam[i + 1] - seam[i]) > 1) {
+                StdOut.print("Abs > 1\n (" + (i + 1) + ", "+ seam[i + 1] + ") vs (" + i +", "+ seam[i]+")");
+                flag = true;
+            }
         }
         if (flag) throw new IllegalArgumentException();
     }
@@ -301,21 +324,20 @@ public class SeamCarver {
         for (int i = 0; i < seam.length - 1; i++) {
             //if(!checkpoint(i+1,seam[i+1]));
             if (Math.abs(seam[i + 1] - seam[i]) > 1){
-                StdOut.print("Abs > 1\n" + seam[i + 1] + " vs " + seam[i]);
+                StdOut.print("Abs > 1\n (" + (i + 1) + ", "+ seam[i + 1] + ") vs (" + i +", "+ seam[i]+")");
                 flag = true;
             }
         }
         if (flag) throw new IllegalArgumentException();
     }
     public static void main(String args[]){
-        SeamCarver test= new SeamCarver(new Picture("/Users/tiemo/Desktop/DeskStuff/Tiemo Profile3.jpg"));
+        SeamCarver test= new SeamCarver(new Picture("/Users/tiemo/Desktop/DeskStuff/Tiemo Profile2.jpg"));
         Picture t=new Picture(test.picture());
         t.show();
         Stopwatch timer = new Stopwatch();
-        for (int l = 0; l < 300; l++) {
-            if (l % 10 == 1) test.picture().show();
-            test.removeHorizontalSeam(test.findHorizontalSeam());
-            test.removeVerticalSeam(test.findVerticalSeam());
+        for (int i = 0; i < 100; i++) {
+           test.removeHorizontalSeam(test.findHorizontalSeam());
+           test.removeVerticalSeam(test.findVerticalSeam());
         }
         StdOut.print(timer.elapsedTime());
         test.picture().show();/**/
