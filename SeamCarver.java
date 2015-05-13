@@ -4,7 +4,6 @@ public class SeamCarver {
     private int[] en;
     private int[] edgeto;
     private int[] disto;
-    private boolean[] marked;
     private int start;
     private int end;
     private int w;
@@ -26,7 +25,6 @@ public class SeamCarver {
                 this.pic[map(i, j)] = pic.get(j, i);
             }
         }
-        marked = new boolean[h * w + 2];
         edgeto = new int[h * w + 2];
         disto = new int[h * w + 2];
         end = h * w;
@@ -76,7 +74,7 @@ public class SeamCarver {
      * Energy of pixel at column x and row y
      */
     public double energy(int x, int y){
-        checkpoint(y, x);
+        if (x >= w || x < 0 || y >= h || y < 0) throw new IllegalArgumentException();
         return (double) en[map(y, x)];
     }
     private void initEnergy(){
@@ -95,16 +93,15 @@ public class SeamCarver {
      * @return
      */
     public int[] findHorizontalSeam(){
-        boolean mtf = marked[0];
-        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
-        IndexMinPQ<Integer> seam = new IndexMinPQ<Integer>(h * w + 3);
-        Stack<Integer> rpo = new Stack<Integer>();
-        hdfs(start, rpo, mtf);
-        for (int v : rpo) {
-            for (int e : hadj(v)) {
-               relax(v, e, seam);
+        for (int p = 0; p < h; p++) disto[map(p, 0)] = BORDER;
+        for (int j = 1; j < w; j++) {
+            for (int i = 0; i < h; i++) {
+                disto[map(i, j)] = inf;
+                hrelax(map(i, j));
             }
         }
+        disto[end] = inf;
+        hrelax(end);
         int p = end;
         int[] HS = new int[w]; 
         while (p==end || mapx(p) > 0) {
@@ -113,29 +110,44 @@ public class SeamCarver {
         }
         return HS;
     }
-    private void hdfs(int v, Stack<Integer> postorder, boolean mtf) {
-        marked[v] = !mtf;
-        for (int e : hadj(v)) {
-            if (marked[e] == mtf) {
-                hdfs(e, postorder, mtf);
+    private void hrelax(int p) {
+        for (int q: inhadj(p)) {
+            if(disto[p] > disto[q] + en[p]) {
+                disto[p] = disto[q] + en[p];
+                edgeto[p] = q;
             }
         }
-        postorder.push(v);
     }
+    private Bag<Integer> inhadj(int p){
+        Bag<Integer> HA = new Bag<Integer>();
+        if (p == end) {
+            for (int v = 0; v < h-1; v++){
+                HA.add(map(v, w - 1));
+            }
+            return HA;
+        }
+        else if (mapx(p) == 1) {
+            HA.add(map(mapy(p), 0));
+            return HA;
+        }
+        int i = mapy(p), j = mapx(p) - 1;
+        if (checkpoint(i + 1, j)) HA.add(map(i + 1, j));
+        if (checkpoint(i - 1, j)) HA.add(map(i - 1, j));
+        if (checkpoint(i, j)) HA.add(map(i, j));
+        return HA;
+    }
+ 
     /**
      * // sequence of indices for vertical seam
      * @return
      */
     public int[] findVerticalSeam(){
-        boolean mtf = marked[0];
-        for (int p = 0; p < h * w + 1; p++) disto[p] = inf;
-        IndexMinPQ<Integer> seam = new IndexMinPQ<Integer>(h * w + 3);
-        Stack<Integer> rpo = new Stack<Integer>();
-        vdfs(start, rpo, mtf);
-        for (int v : rpo) {
-            for (int e : vadj(v)) {
-               relax(v, e, seam);
-            }
+        for (int v = 0; v < w; v++){
+            disto[v] = BORDER;
+        }
+        for (int v = w; v <= end; v++) {
+            disto[v] = inf;
+            vrelax(v);
         }
         int p = end;
         int[] VS = new int[h]; 
@@ -145,24 +157,32 @@ public class SeamCarver {
         }
         return VS;
     }
-    private void vdfs(int v, Stack<Integer> postorder, boolean mtf) {
-        marked[v] = !mtf;
-        for (int e : vadj(v)) {
-            if (marked[e] == mtf) {
-                vdfs(e, postorder, mtf);
+    private void vrelax(int p) {
+        for (int q: invadj(p)) {
+            if(disto[p] > disto[q] + en[p]) {
+                disto[p] = disto[q] + en[p];
+                edgeto[p] = q;
             }
         }
-        postorder.push(v);
-    }
-    private void relax(int from, int p, IndexMinPQ<Integer> pq){
-        if (disto[p] > disto[from] + en[p]) {
-            disto[p] = disto[from] + en[p];
-            edgeto[p] = from;
-            if (pq.contains(p)) pq.decreaseKey(p, disto[p]);
-            else pq.insert(p, disto[p]);
+    } 
+    private Bag<Integer> invadj(int p){
+        Bag<Integer> VA = new Bag<Integer>();
+        if (p == end) {
+            for (int v = 0; v < w; v++){
+                VA.add(map(h - 1,v));
+            }
+            return VA;
         }
+        else if (mapy(p) == 1) {
+            VA.add(map(0, mapx(p)));
+            return VA;
+        }
+        int i = mapy(p) - 1, j = mapx(p);
+        if (checkpoint(i, j + 1)) VA.add(map(i, j + 1));
+        if (checkpoint(i, j - 1)) VA.add(map(i, j - 1));
+        if (checkpoint(i, j)) VA.add(map(i, j));
+        return VA;
     }
-    
     private Bag<Integer> vadj(int p){
         Bag<Integer> VA = new Bag<Integer>();
         if (p == start) {
@@ -206,7 +226,7 @@ public class SeamCarver {
      * @param seam
      */
     public void removeHorizontalSeam(int[] seam){
-      //  checkHSeam(seam);
+        checkHSeam(seam);
         int max = 0;
         for (int i : seam) {
             if (i > max) max = i;
@@ -223,20 +243,20 @@ public class SeamCarver {
         refresh();
         for(int j = 0; j < w; j++){
             if (checkpoint(seam[j] - 1, j)) en[map(seam[j] - 1, j)] = calcEnergy(seam[j] - 1, j);
-            if (checkpoint(seam[j] - 1, j)) en[map(seam[j], j)] = calcEnergy(seam[j], j);
-            if (checkpoint(seam[j] - 1, j)) en[map(seam[j] + 1, j)] = calcEnergy(seam[j] + 1, j);
+            if (checkpoint(seam[j], j)) en[map(seam[j], j)] = calcEnergy(seam[j], j);
+            if (checkpoint(seam[j] + 1, j)) en[map(seam[j] + 1, j)] = calcEnergy(seam[j] + 1, j);
         }
     }
     /**
      * // remove vertical seam from current picture
      */
     public void removeVerticalSeam(int[] seam){
-  //      checkVSeam(seam);
+        checkVSeam(seam);
         for(int i = 0; i < h; i++){
             System.arraycopy(pic, i * w, pic, i * (w - 1), seam[i]);
             System.arraycopy(en, i * w, en, i * (w - 1), seam[i]);
-            System.arraycopy(pic, i * w + seam[i], pic, i * (w - 1) + seam[i] - 1, w - seam[i]);
-            System.arraycopy(en, i * w + seam[i], en, i * (w - 1) + seam[i] - 1, w - seam[i]);
+            System.arraycopy(pic, i * w + seam[i] + 1, pic, i * (w - 1) + seam[i], w - seam[i] - 1);
+            System.arraycopy(en, i * w + seam[i] + 1, en, i * (w - 1) + seam[i], w - seam[i] - 1);
         }
         w--;
         refresh();
@@ -325,6 +345,7 @@ public class SeamCarver {
             //if(!checkpoint(i+1,seam[i+1]));
             if (Math.abs(seam[i + 1] - seam[i]) > 1){
                 StdOut.print("Abs > 1\n (" + (i + 1) + ", "+ seam[i + 1] + ") vs (" + i +", "+ seam[i]+")");
+                StdOut.print("\n" + w);
                 flag = true;
             }
         }
@@ -336,8 +357,9 @@ public class SeamCarver {
         t.show();
         Stopwatch timer = new Stopwatch();
         for (int i = 0; i < 100; i++) {
-           test.removeHorizontalSeam(test.findHorizontalSeam());
-           test.removeVerticalSeam(test.findVerticalSeam());
+            test.removeHorizontalSeam(test.findHorizontalSeam());
+            test.removeVerticalSeam(test.findVerticalSeam());
+           if (i % 20 == 0) test.picture().show();
         }
         StdOut.print(timer.elapsedTime());
         test.picture().show();/**/
