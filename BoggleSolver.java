@@ -28,8 +28,8 @@ public class BoggleSolver {
         M = board.rows();
         N = board.cols(); 
         TrieSET hits = new TrieSET();
-        boolean[] visited = new boolean[M*N];
-        for (int i = 0; i < M*N; i++) {
+        boolean[] visited = new boolean[M * N];
+        for (int i = 0; i < M * N; i++) {
             DFS(0, i,
                     board.getLetter(mapy(i), mapx(i)), 
                     hits, 
@@ -44,8 +44,9 @@ public class BoggleSolver {
      * Runs a Depth First Search on the adjacent fields of the BoggleBoard terminating a branch 
      *  if it is no longer in the trie representation of the dictionary (i.e. Node.next()[cti(nxt)]==null).
      */
-    private void DFS(int count, int pos, char nxt, TrieSET hits, BoggleBoard board, boolean[] visited, TrieNode.Node nod){
+    private void DFS(int count, int ps, char nxt, TrieSET hits, BoggleBoard board, boolean[] visited, TrieNode.Node nod) {
         if (nod.next()[cti(nxt)] == null) return;
+        int pos = ps;
         TrieNode.Node node = nod.next()[cti(nxt)];
         if (nxt == 'Q') {
             node = node.next()[cti('U')];
@@ -75,46 +76,44 @@ public class BoggleSolver {
      * Calculates adjacent fields and returns them in a Stack for use in DFS
      *
      */
-    private int adj(int x, int y, Stack<Integer> S) {
-        int count = 0;
+    private void adj(int x, int y, Stack<Integer> S) {
         boolean flag = false;
         if (x > 0) {
-           S.push(map(x-1, y));
-           count++;
+           S.push(map(x - 1, y));
            if (y > 0) {
-               S.push(map(x-1, y-1));
-               S.push(map(x, y-1));
-               count += 2;
+               S.push(map(x - 1, y - 1));
+               S.push(map(x, y - 1));
                flag = true;
            }
-           if (y < N-1) {
-               S.push(map(x-1, y+1));
-               S.push(map(x, y+1));
-               count += 2;
+           if (y < M - 1) {
+               S.push(map(x - 1, y + 1));
+               S.push(map(x, y + 1));
                flag = true;
            }
         }
-        if (x < M-1) {
-            count++;
-            S.push(map(x+1, y));
+        if (x < N - 1) {
+            S.push(map(x + 1, y));
             if (y > 0) {
-                S.push(map(x+1, y-1));
-                count++;
+                S.push(map(x + 1, y - 1));
                 if (!flag) {
-                        S.push(map(x,y-1));
-                        count++;
+                        S.push(map(x, y - 1));
                 }
             }
-            if (y < N-1) {
-                 S.push(map(x+1, y+1));
-                 count++;
+            if (y < N - 1) {
+                 S.push(map(x + 1, y + 1));
                  if (!flag) {
-                     S.push(map(x, y+1));
-                     count += 2;
+                     S.push(map(x, y + 1));
                  }
             }
-         }
-        return count;
+        }
+        else if (N == 1) {
+            if (y > 0) {
+                S.push(map(x, y - 1));
+            }   
+            if (y < M - 1) {
+                S.push(map(x, y + 1));
+            }
+        }
     }
     /**
      * Returns the score of the given word if it is in the dictionary, zero otherwise.
@@ -160,23 +159,23 @@ public class BoggleSolver {
      * @return
      */
     private int map(int x, int y) {
-        return y * M + x;
+        return y * N + x;
     }
     private int mapx(int x) {
-        return x % M;
+        return x % N;
     }
     private int mapy(int y) {
-        return (y - y % M) / M;
+        return (y - y % N) / N;
     }
     /**
      * Testing method for the visited array.
      * @param vis
      * @param M
      */
-    private void printvis(boolean vis[], int M) {
-        for(int i = 0; i < M; i++){
-            for(int j = 0; j < vis.length / M; j++){
-                if(vis[map(j, i)]) StdOut.print(" 1");
+    private void printvis(boolean[] vis) {
+        for (int i = 0; i < M; i++) {
+            for (int j = 0; j < vis.length / M; j++) {
+                if (vis[map(j, i)]) StdOut.print(" 1");
                 else StdOut.print(" 0");
             }
             StdOut.print("\n");
@@ -187,18 +186,18 @@ public class BoggleSolver {
      * @param args
      */
     public static void main(String[] args) {
-        In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-yawl.txt");
+        In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-16q.txt");
         String[] dictionary = in.readAllStrings();
         BoggleSolver solver = new BoggleSolver(dictionary);
-        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points1250.txt");
+        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-16q.txt");
         int score = 0;
         Stopwatch timer = new Stopwatch();
-        int N = 10000;
+        int N = 1;
         for (int i = 0; i < N; i++) {
             solver.getAllValidWords(board);
             //if (i % 50 == 0) StdOut.println(i);
         }
-        double Time = timer.elapsedTime();
+        double time = timer.elapsedTime();
      //   StdOut.printf("Boggle Solver Time at %d iterations: %f", N, timer.elapsedTime());
         BoggleBoard board1 = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points100.txt");
         timer = new Stopwatch();
@@ -208,13 +207,12 @@ public class BoggleSolver {
         }
         StdOut.printf("Boggle Solver Time with 100 solutions at %d iterations: %f", N, timer.elapsedTime());
         StdOut.println("");
-        StdOut.printf("Boggle Solver Time with 1250 solutions at %d iterations: %f", N, Time);
+        StdOut.printf("Boggle Solver Time with 1250 solutions at %d iterations: %f", N, time);
         for (String word : solver.getAllValidWords(board)) {
             StdOut.print("\n" + word);
             score += solver.scoreOf(word);
         }
-     //   StdOut.println("\nScore = " + score);
-        StdOut.println("\n Q-char" +board.getLetter(2, 1));
+        StdOut.println("\nScore = " + score);
     }
 }
 
