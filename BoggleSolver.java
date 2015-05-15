@@ -4,8 +4,8 @@ public class BoggleSolver {
     private int N = 0;
     private final TrieNode dict;
     private int[][] adj; 
-    private BoggleBoard board;
-    private boolean visited[];
+    private BoggleBoard brd;
+    private boolean[] visited;
     private SET<String> hits; 
    // private TrieNode.Node node;
     /**
@@ -26,8 +26,8 @@ public class BoggleSolver {
      */
     
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        this.board = board;
-        if(M != board.rows() || N != board.cols()) {
+        brd = board;
+        if (M != board.rows() || N != board.cols()) {
             M = board.rows();
             N = board.cols();
             setadj();
@@ -44,9 +44,9 @@ public class BoggleSolver {
         }
         return hits;
     }
-    private void setadj(){
+    private void setadj() {
         adj = new int[M * N][];
-        for(int i = 0; i < M * N; i++) {
+        for (int i = 0; i < M * N; i++) {
             adj[i] = adj(mapx(i), mapy(i));
         }
     }
@@ -68,10 +68,10 @@ public class BoggleSolver {
         }
         for (int pos : adj[ps]) {
             if (visited[pos]) continue;
-            if (node.next()[cti(board.getLetter(mapy(pos), mapx(pos)))] == null) continue;
+            if (node.next()[cti(brd.getLetter(mapy(pos), mapx(pos)))] == null) continue;
             DFS(count+1, 
                     pos,
-                    board.getLetter(mapy(pos), mapx(pos)),
+                    brd.getLetter(mapy(pos), mapx(pos)),
                     node);
         }
         visited[ps] = false;
@@ -119,11 +119,11 @@ public class BoggleSolver {
                 S.push(map(x, y + 1));
             }
         }
-        int[] adj = new int[S.size()];
-        for(int i = 0; i < adj.length; i++) {
-            adj[i] = S.pop();
+        int[] ad = new int[S.size()];
+        for (int i = 0; i < ad.length; i++) {
+            ad[i] = S.pop();
         }
-        return adj;
+        return ad;
     }
     /**
      * Returns the score of the given word if it is in the dictionary, zero otherwise.
@@ -200,17 +200,6 @@ public class BoggleSolver {
         StdOut.printf("Boggle Solver Time with 100 solutions at %d iterations: %f", N, timer.elapsedTime());
         StdOut.println("");
         StdOut.printf("Boggle Solver Time with 1250 solutions at %d iterations: %f", N, time);
-        int score = 0;
-        for (String word : solver.getAllValidWords(board)) {
-            StdOut.print("\n" + word);
-            score += solver.scoreOf(word);
-        }
-        StdOut.println("\nScore = " + score);
-        timer = new Stopwatch();
-        for(int i = 0; i < 10000000; i++){
-            board.getLetter(i % 4,i % 4);
-        }
-        StdOut.printf("board.getLetter: %f", timer.elapsedTime());
     }
 }
 
