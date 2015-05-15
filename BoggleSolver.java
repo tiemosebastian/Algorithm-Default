@@ -50,6 +50,7 @@ public class BoggleSolver {
         TrieNode.Node node = nod.next()[cti(nxt)];
         if (nxt == 'Q') {
             node = node.next()[cti('U')];
+            if (node == null) return;
         }
         boolean[] vis = visited.clone();
         vis[pos] = true;
@@ -99,14 +100,14 @@ public class BoggleSolver {
                         S.push(map(x, y - 1));
                 }
             }
-            if (y < N - 1) {
+            if (y < M - 1) {
                  S.push(map(x + 1, y + 1));
                  if (!flag) {
                      S.push(map(x, y + 1));
                  }
             }
         }
-        else if (N == 1) {
+        if (N == 1) {
             if (y > 0) {
                 S.push(map(x, y - 1));
             }   
@@ -122,6 +123,7 @@ public class BoggleSolver {
      * @return
      */
     public int scoreOf(String word) {
+        if (!dict.contains(word)) return 0;
         int score = word.length();
         int qus = 0;
         for (int i = 0; i < score; i++) {
@@ -186,10 +188,10 @@ public class BoggleSolver {
      * @param args
      */
     public static void main(String[] args) {
-        In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-16q.txt");
+        In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-yawl.txt");
         String[] dictionary = in.readAllStrings();
         BoggleSolver solver = new BoggleSolver(dictionary);
-        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-16q.txt");
+        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-q.txt");
         int score = 0;
         Stopwatch timer = new Stopwatch();
         int N = 1;
