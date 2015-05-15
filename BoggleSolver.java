@@ -1,9 +1,13 @@
 
 public class BoggleSolver {
-    private int M;
-    private int N;
+    private int M = 0;
+    private int N = 0;
     private final TrieNode dict;
-   
+    private int[][] adj; 
+    private BoggleBoard board;
+    private boolean visited[];
+    private SET<String> hits; 
+   // private TrieNode.Node node;
     /**
      * Initializes the data structure using the given array of strings as the dictionary.
      * (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
@@ -11,12 +15,9 @@ public class BoggleSolver {
      */
     public BoggleSolver(String[] dictionary) {
         dict = new TrieNode(26);
-        Stopwatch timer = new Stopwatch();
         for (String w: dictionary) {
             dict.add(w);
         }
-        StdOut.println("Dictionary initiation time: " + timer.elapsedTime());
-        
     }
     /**
      * Returns the set of all valid words in the given Boggle board, as an Iterable.
@@ -25,59 +26,62 @@ public class BoggleSolver {
      */
     
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        M = board.rows();
-        N = board.cols(); 
-        TrieSET hits = new TrieSET();
-        boolean[] visited = new boolean[M * N];
+        this.board = board;
+        if(M != board.rows() || N != board.cols()) {
+            M = board.rows();
+            N = board.cols();
+            setadj();
+        }
+        hits = new SET<String>();
+        visited = new boolean[M * N];
+        
         for (int i = 0; i < M * N; i++) {
+            if (dict.root().next()[cti(board.getLetter(mapy(i), mapx(i)))] == null) continue;
             DFS(0, i,
                     board.getLetter(mapy(i), mapx(i)), 
-                    hits, 
-                    board, 
-                    visited, 
                     dict.root());
             visited[i] = false;
         }
         return hits;
     }
+    private void setadj(){
+        adj = new int[M * N][];
+        for(int i = 0; i < M * N; i++) {
+            adj[i] = adj(mapx(i), mapy(i));
+        }
+    }
     /*
      * Runs a Depth First Search on the adjacent fields of the BoggleBoard terminating a branch 
      *  if it is no longer in the trie representation of the dictionary (i.e. Node.next()[cti(nxt)]==null).
      */
-    private void DFS(int count, int ps, char nxt, TrieSET hits, BoggleBoard board, boolean[] visited, TrieNode.Node nod) {
-        if (nod.next()[cti(nxt)] == null) return;
-        int pos = ps;
+    private void DFS(int count, int ps, char nxt, TrieNode.Node nod) {
         TrieNode.Node node = nod.next()[cti(nxt)];
         if (nxt == 'Q') {
             node = node.next()[cti('U')];
             if (node == null) return;
         }
-        boolean[] vis = visited.clone();
-        vis[pos] = true;
+        visited[ps] = true;
         if (node.isString()) {
             if (node.getString().length() > 2) {
                 hits.add(node.getString());
             }
         }
-        Stack<Integer> DFS = new Stack<Integer>();
-        adj(mapx(pos), mapy(pos), DFS);
-        while (!DFS.isEmpty()) {
-            pos = DFS.pop();
-            if (vis[pos]) continue;
+        for (int pos : adj[ps]) {
+            if (visited[pos]) continue;
+            if (node.next()[cti(board.getLetter(mapy(pos), mapx(pos)))] == null) continue;
             DFS(count+1, 
                     pos,
                     board.getLetter(mapy(pos), mapx(pos)),
-                    hits,
-                    board,
-                    vis,
                     node);
         }
+        visited[ps] = false;
     }
     /*
      * Calculates adjacent fields and returns them in a Stack for use in DFS
      *
      */
-    private void adj(int x, int y, Stack<Integer> S) {
+    private int[] adj(int x, int y) {
+        Stack<Integer> S = new Stack<Integer>();
         boolean flag = false;
         if (x > 0) {
            S.push(map(x - 1, y));
@@ -115,6 +119,11 @@ public class BoggleSolver {
                 S.push(map(x, y + 1));
             }
         }
+        int[] adj = new int[S.size()];
+        for(int i = 0; i < adj.length; i++) {
+            adj[i] = S.pop();
+        }
+        return adj;
     }
     /**
      * Returns the score of the given word if it is in the dictionary, zero otherwise.
@@ -123,14 +132,13 @@ public class BoggleSolver {
      * @return
      */
     public int scoreOf(String word) {
-        if (!dict.contains(word)) return 0;
+        if (!dict.isWord(word)) return 0;
         int score = word.length();
         int qus = 0;
         for (int i = 0; i < score; i++) {
             if (word.charAt(i) == 'Q') {
-                if (word.charAt(i+1) == 'U') {
-                    qus++;
-                    i++;
+                if (word.charAt(i + 1) != 'U') {
+                    return 0;
                 }
             }
         }
@@ -170,20 +178,6 @@ public class BoggleSolver {
         return (y - y % N) / N;
     }
     /**
-     * Testing method for the visited array.
-     * @param vis
-     * @param M
-     */
-    private void printvis(boolean[] vis) {
-        for (int i = 0; i < M; i++) {
-            for (int j = 0; j < vis.length / M; j++) {
-                if (vis[map(j, i)]) StdOut.print(" 1");
-                else StdOut.print(" 0");
-            }
-            StdOut.print("\n");
-        }
-    }
-    /**
      * Unit testing.
      * @param args
      */
@@ -191,30 +185,32 @@ public class BoggleSolver {
         In in = new In("/Users/tiemo/Desktop/Boggle/boggle/dictionary-yawl.txt");
         String[] dictionary = in.readAllStrings();
         BoggleSolver solver = new BoggleSolver(dictionary);
-        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-q.txt");
-        int score = 0;
+        BoggleBoard board = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points1250.txt");
+        BoggleBoard board1 = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points100.txt");
+        int N = 10000;
         Stopwatch timer = new Stopwatch();
-        int N = 1;
         for (int i = 0; i < N; i++) {
             solver.getAllValidWords(board);
-            //if (i % 50 == 0) StdOut.println(i);
         }
         double time = timer.elapsedTime();
-     //   StdOut.printf("Boggle Solver Time at %d iterations: %f", N, timer.elapsedTime());
-        BoggleBoard board1 = new BoggleBoard("/Users/tiemo/Desktop/Boggle/boggle/board-points100.txt");
         timer = new Stopwatch();
         for (int i = 0; i < N; i++) {
             solver.getAllValidWords(board1);
-          //  if (i % 50 == 0) StdOut.println(i);
         }
         StdOut.printf("Boggle Solver Time with 100 solutions at %d iterations: %f", N, timer.elapsedTime());
         StdOut.println("");
         StdOut.printf("Boggle Solver Time with 1250 solutions at %d iterations: %f", N, time);
+        int score = 0;
         for (String word : solver.getAllValidWords(board)) {
             StdOut.print("\n" + word);
             score += solver.scoreOf(word);
         }
         StdOut.println("\nScore = " + score);
+        timer = new Stopwatch();
+        for(int i = 0; i < 10000000; i++){
+            board.getLetter(i % 4,i % 4);
+        }
+        StdOut.printf("board.getLetter: %f", timer.elapsedTime());
     }
 }
 
